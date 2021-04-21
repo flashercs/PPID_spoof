@@ -43,50 +43,56 @@ int main(int argc, const char * argv[])
 	DWORD dwPid = 0;
 
 
-	if (argc != 3)
-		std::cout << "usage: SelectMyParent program pid";
+	if (argc != 4)
+		std::cout << "usage: SelectMyParent program pid showWindow\n";
 	else
 	{
 		dwPid = atoi(argv[2]);
 		if (0 == dwPid)
 		{
-			std::cout << "Invalid pid";
-			return 0;
+			std::cout << "Invalid pid\n";
+			return 1;
 		}
 		InitializeProcThreadAttributeList(NULL, 1, 0, &cbAttributeListSize);
 		pAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, cbAttributeListSize);
 		if (NULL == pAttributeList)
 		{
-			std::wcout << "HeapAlloc error";
-			return 0;
+			std::wcout << "HeapAlloc error\n";
+			return 2;
 		}
 		if (!InitializeProcThreadAttributeList(pAttributeList, 1, 0, &cbAttributeListSize))
 		{
-			std::wcout << "InitializeProcThreatAttributeList error";
-			return 0;
+			std::wcout << "InitializeProcThreatAttributeList error\n";
+			return 3;
 		}
 		CurrentProcessAdjustToken();
 		hParentProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPid);
 		if (NULL == hParentProcess)
 		{
-			std::wcout << "OpenProcess error";
-			return 0;
+			std::wcout << "OpenProcess error\n";
+			return 4;
 		}
 		if (!UpdateProcThreadAttribute(pAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof(HANDLE), NULL, NULL))
 		{
-			std::wcout << "UpdateProcThreadAttribute error";
-			return 0;
+			std::wcout << "UpdateProcThreadAttribute error\n";
+			return 5;
 		}
 		sie.lpAttributeList = pAttributeList;
-		if (!CreateProcessA(NULL, (LPSTR)argv[1], NULL, NULL, FALSE, EXTENDED_STARTUPINFO_PRESENT, NULL, NULL, &sie.StartupInfo, &pi))
+		sie.StartupInfo.dwFlags = STARTF_USESHOWWINDOW;
+		sie.StartupInfo.wShowWindow = atoi(argv[3]);
+		if (!CreateProcessA(NULL, (LPSTR)argv[1], NULL, NULL, FALSE, EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE, NULL, NULL, &sie.StartupInfo, &pi))
 		{
-			std::wcout << "CreateProcess error";
-			return 0;
+			std::wcout << "CreateProcess error\n";
+			return 6;
 		}
 		printf("Process created: %d\n", pi.dwProcessId);
 
+		//WaitForSingleObject(pi.hProcess, INFINITE);
+		
 		DeleteProcThreadAttributeList(pAttributeList);
 		CloseHandle(hParentProcess);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 	}
 
 	return 0;

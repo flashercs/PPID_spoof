@@ -1,0 +1,10 @@
+/.vs/
+/Backup/
+/Debug/
+/Release/*
+!/Release/*.exe
+!/Release/*.bat
+/spoof/Debug/
+/spoof/Release/
+/spoof/x64/
+/x64/
